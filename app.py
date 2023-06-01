@@ -1,33 +1,37 @@
-from flask import Flask, render_template, request
-import pickle
+import streamlit as st
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
+import pickle
+import numpy as np
 
-app = Flask(__name__)
+st.title("Aplikasi Prediksi Stroke")
 
-# Load model
-model = pickle.load(open('model.pkl', 'rb'))
+gender = st.selectbox("Apa Jenis Kelamin Anda?", ['Male', 'Female'])
+ever_married = st.selectbox("Apakah Anda Sudah Menikah?", ['Yes', 'No'])
+work_type = st.selectbox("Apa Pekerjaan Anda?", ['Self-employed', 'Private', 'Govt_job', 'children'])
+Residence_type = st.selectbox("Bagaimana Status Permukiman Tempat Tinggal Anda?", ['Rural', 'Urban'])
+smoking_status = st.selectbox("Apakah Anda Seorang Perokok?", ['never smoked', 'Unknown', 'formerly smoked', 'smokes'])
+age = st.number_input("Berapa Umur Anda?")
+hypertension = st.number_input("Apakah Anda Pernah Mengidap Hipertensi? Ketik 1 untuk ya, 0 untuk tidak")
+heart_disease = st.number_input("Apakah Anda Punya Penyakit Hati? Ketik 1 untuk ya, 0 untuk tidak")
+avg_glucose_level = st.number_input("Berapa Level Rata-Rata Gula Anda?")
+bmi = st.number_input("Berapa Indeks Massa Tubuh Anda?")
 
-# Preprocess function
-def preprocess_data(data):
-    # Convert categorical variables to one-hot encoding
-    data = pd.get_dummies(data)
-    # Standardize features
-    scaler = StandardScaler()
-    data_scaled = scaler.fit_transform(data)
-    return data_scaled
 
-@app.route('/')
-def home():
-    return render_template('index.html')
+model = pickle.load(open("model.pkl","rb"))
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    features = [float(x) for x in request.form.values()]
-    data = [features]
-    data_scaled = preprocess_data(data)
-    prediction = model.predict(data_scaled)
-    return render_template('result.html', prediction=prediction)
+data_input = pd.DataFrame([[gender, ever_married, work_type, Residence_type, smoking_status,
+                            age, hypertension, heart_disease, avg_glucose_level, bmi
+]],
+            columns=["gender","ever_married","work_type","Residence_type","smoking_status",
+                     "age","hypertension","heart_disease","avg_glucose_level","bmi"
+])
 
-if __name__ == '__main__':
-    app.run(debug=True)
+
+hasil = model.predict(data_input)
+
+if st.button('Submit'):
+    result = model.predict(data_input)[0]
+    if result == 1:
+        st.text('Anda diprediksi mengidap penyakit stroke.')
+    else:
+        st.text('Anda diprediksi tidak mengidap penyakit stroke.')
